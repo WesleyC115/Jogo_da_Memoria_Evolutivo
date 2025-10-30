@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "jogo-memoria",
-    "slug": "jogo-memoria",
+    "name": "MeuJogoMemoria",
+    "slug": "MeuJogoMemoria",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,30 +13,17 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.wesleyc115.jogomemoria"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.wesleyc115.jogomemoria"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "093c00ce-30b3-45bd-8fd8-d6851ca15f65"
-      }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/093c00ce-30b3-45bd-8fd8-d6851ca15f65"
     }
   }
 }
