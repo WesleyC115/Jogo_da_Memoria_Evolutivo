@@ -8,6 +8,8 @@ import {
   Animated,
   Image,
   Modal,
+  ScrollView, 
+  SafeAreaView, 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -131,6 +133,9 @@ export default function JogoMemoria() {
       require("./assets/imagem/castel.jpg"),
     ];
 
+    // Adicione mais imagens aqui se precisar de mais níveis
+    // Ex: require("./assets/imagem/yubel.jpg"),
+
     const quantidadePares = Math.min(nivelAtual + 1, imagens.length);
     const selecionadas = imagens.slice(0, quantidadePares);
 
@@ -172,7 +177,7 @@ export default function JogoMemoria() {
     return () => {
       if (intervalo) clearInterval(intervalo);
     };
-  }, [jogando]);
+  }, [jogando, tempo]); 
 
   // --- Função de Derrota ---
   const handleDerrota = () => {
@@ -276,11 +281,15 @@ export default function JogoMemoria() {
       console.log(`🎉 VITÓRIA no nível ${nivel}!`);
 
       setJogando(false);
-      setTempo(0);
-
+      
       mostrarMensagem(`🎉 Parabéns! Nível ${nivel} completo!`, "#2ecc71");
 
       setTimeout(() => {
+        // Salvar recorde (aqui também, caso seja o primeiro ou melhor)
+        if (tempo > (recordes[nivel]?.tempo || 0)) {
+           salvarRecorde(nivel, tempo);
+        }
+        
         Alert.alert(
           "🎉 Vitória!",
           `Nível ${nivel} completo!\n\nTempo restante: ${tempo}s\n\nPróximo nível: ${
@@ -298,7 +307,7 @@ export default function JogoMemoria() {
             },
           ]
         );
-      }, 1000);
+      }, 1000); 
     }
   }
 
@@ -328,6 +337,9 @@ export default function JogoMemoria() {
         setCombinadas(novasCombinadas);
         setViradas([]);
         setBloqueio(false);
+
+        // **CORREÇÃO**: Verificação de vitória REMOVIDA daqui
+
       } else {
         mostrarMensagem("❌ Tente novamente!", "#e74c3c");
 
@@ -335,20 +347,24 @@ export default function JogoMemoria() {
           setViradas([]);
           setBloqueio(false);
           const paresRestantes = cartas.length / 2 - combinadas.length / 2;
-          mostrarMensagem(
-            `Encontre ${paresRestantes} ${
-              paresRestantes === 1 ? "par" : "pares"
-            } restantes`,
-            "#f1c40f"
-          );
+          if (paresRestantes > 0) { 
+            mostrarMensagem(
+              `Encontre ${paresRestantes} ${
+                paresRestantes === 1 ? "par" : "pares"
+              } restantes`,
+              "#f1c40f"
+            );
+          }
         }, 1000);
       }
     } else {
       const paresRestantes = cartas.length / 2 - combinadas.length / 2;
-      mostrarMensagem(
-        `Encontre ${paresRestantes} ${paresRestantes === 1 ? "par" : "pares"}`,
-        "#f1c40f"
-      );
+       if (paresRestantes > 0) { 
+          mostrarMensagem(
+            `Encontre ${paresRestantes} ${paresRestantes === 1 ? "par" : "pares"}`,
+            "#f1c40f"
+          );
+       }
     }
   }
 
@@ -363,12 +379,12 @@ export default function JogoMemoria() {
     }
   }
 
-  // --- Verificação automática de vitória ---
+  // --- **CORREÇÃO**: Verificação automática de vitória RESTAURADA ---
   useEffect(() => {
-    if (jogando && combinadas.length > 0) {
+    if (jogando && combinadas.length > 0 && combinadas.length === cartas.length) {
       verificarVitoria();
     }
-  }, [combinadas, jogando]);
+  }, [combinadas, jogando, cartas.length]); // Adicionado cartas.length para garantir
 
   // 🆕 Tela de Menu
   const renderMenu = () => (
@@ -441,84 +457,90 @@ export default function JogoMemoria() {
 
   // --- Renderização do jogo ---
   return (
-    <View style={styles.container}>
-      {renderMenu()}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {renderMenu()}
 
-      {/* Botão Menu durante o jogo */}
-      {!mostrarMenu && (
-        <TouchableOpacity
-          style={styles.botaoMenu}
-          onPress={() => setMostrarMenu(true)}
-        >
-          <Text style={styles.botaoMenuTexto}>☰</Text>
-        </TouchableOpacity>
-      )}
-
-      <Text style={styles.texto}>Nível: {nivel}</Text>
-      <Text style={styles.texto}>Tempo: {tempo}s</Text>
-      <Text style={styles.texto}>
-        Pares: {combinadas.length / 2} / {cartas.length / 2}
-      </Text>
-      <Text style={styles.texto}>Tentativas: {tentativas}</Text>
-
-      <Text style={[styles.mensagem, { color: corMensagem }]}>{mensagem}</Text>
-
-      <View style={styles.tabuleiro}>
-        {cartas.map((carta, index) => {
-          const isVirada =
-            viradas.includes(index) || combinadas.includes(index);
-
-          return (
-            <TouchableOpacity
-              key={`${carta.id}-${index}`}
-              onPress={() => virarCarta(index)}
-              disabled={!jogando}
-            >
-              <View
-                style={[
-                  styles.carta,
-                  combinadas.includes(index) && styles.cartaCombinada,
-                  viradas.includes(index) && styles.cartaVirada,
-                ]}
-              >
-                {isVirada ? (
-                  <Image
-                    source={carta.imagem}
-                    style={styles.imagemCarta}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={styles.versoCarta}>
-                    <Text style={styles.textoVerso}>?</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {!jogando && !mostrarMenu && (
-        <View style={styles.botoesContainer}>
-          <TouchableOpacity style={styles.botao} onPress={iniciarNivel}>
-            <Text style={styles.textoBotao}>{getTextoBotao()}</Text>
+        {!mostrarMenu && (
+          <TouchableOpacity
+            style={styles.botaoMenu}
+            onPress={() => setMostrarMenu(true)}
+          >
+            <Text style={styles.botaoMenuTexto}>☰</Text>
           </TouchableOpacity>
+        )}
+
+        <Text style={styles.texto}>Nível: {nivel}</Text>
+        <Text style={styles.texto}>Tempo: {tempo}s</Text>
+        <Text style={styles.texto}>
+          Pares: {combinadas.length / 2} / {cartas.length / 2}
+        </Text>
+        <Text style={styles.texto}>Tentativas: {tentativas}</Text>
+
+        <Text style={[styles.mensagem, { color: corMensagem }]}>{mensagem}</Text>
+
+        <View style={styles.tabuleiro}>
+          {cartas.map((carta, index) => {
+            const isVirada =
+              viradas.includes(index) || combinadas.includes(index);
+
+            return (
+              <TouchableOpacity
+                key={`${carta.id}-${index}`}
+                onPress={() => virarCarta(index)}
+                disabled={!jogando}
+              >
+                <View
+                  style={[
+                    styles.carta,
+                    combinadas.includes(index) && styles.cartaCombinada,
+                    viradas.includes(index) && styles.cartaVirada,
+                  ]}
+                >
+                  {isVirada ? (
+                    <Image
+                      source={carta.imagem}
+                      style={styles.imagemCarta}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.versoCarta}>
+                      <Text style={styles.textoVerso}>?</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      )}
-    </View>
+
+        {!jogando && !mostrarMenu && (
+          <View style={styles.botoesContainer}>
+            <TouchableOpacity style={styles.botao} onPress={iniciarNivel}>
+              <Text style={styles.textoBotao}>{getTextoBotao()}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 // --- Estilos Atualizados ---
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: "#222",
+  },
+  container: {
+    flexGrow: 1, 
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#222",
     padding: 20,
+    paddingTop: 60, 
+    paddingBottom: 100, 
   },
-  // 🆕 Estilos do Menu
   menuContainer: {
     flex: 1,
     justifyContent: "center",
@@ -587,7 +609,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  // Estilos existentes
   texto: {
     color: "#fff",
     fontSize: 18,
@@ -607,6 +628,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "center",
     maxWidth: 400,
+    width: "100%", 
     marginVertical: 20,
   },
   carta: {
